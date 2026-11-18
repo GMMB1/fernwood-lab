@@ -1,0 +1,107 @@
+# Fernwood Travel - bug bounty training lab.
+# INTENTIONALLY VULNERABLE. Run it only on a classroom network you control.
+#
+# Network design: every vulnerable service sits on `internal: true` networks with no
+# route to the host, the LAN or the internet. Only `edge` (nginx with fixed upstreams)
+# also sits on a normal bridge so it can publish ports.
+
+name: fernwood-lab
+
+x-app: &app
+  image: fernwood-lab-app:1   # built once, by the portal service below
+  init: true
+  restart: unless-stopped
+  environment:
+    ALICE_PASSWORD: ${ALICE_PASSWORD:-alice-lab-7Qm2vX9pLr}
+    FW_DB: /data/fernwood.db
+
+services:
+  edge:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - ./edge/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "${LAB_BIND:-127.0.0.1}:8088:8088"   # lab dashboard
+      - "${LAB_BIND:-127.0.0.1}:8080:8080"   # Fernwood website (cached)
+      - "${LAB_BIND:-127.0.0.1}:8081:8081"   # Fernwood ID (OAuth)
+      - "${LAB_BIND:-127.0.0.1}:8082:8082"   # partner link checker
+      - "${LAB_BIND:-127.0.0.1}:8083:8083"   # partner API gateway
+      - "${LAB_BIND:-127.0.0.1}:9000:9000"   # attacker box
+    networks: [edge, dmz, internet]
+    depends_on: [portal, idp, linkcheck, gateway, attacker, dashboard]
+
+  portal:
+    <<: *app
+    build: ./app
+    command: gunicorn -w 1 --threads 16 -b 0.0.0.0:5000 portal:app
+    volumes: [fwdata:/data]
+    networks: [dmz]
+
+  idp:
+    <<: *app
+    command: gunicorn -w 1 --threads 16 -b 0.0.0.0:5000 idp:app
+    volumes: [fwdata:/data]
+    networks: [dmz]
+    depends_on: [portal]
+
+  linkcheck:
+    <<: *app
+    command: gunicorn -w 1 --threads 16 -b 0.0.0.0:5000 linkcheck:app
+    networks: [dmz, internet, corp]
+
+  gateway:
+    <<: *app
+    command: python gateway.py
+    networks: [dmz, corp]
+
+  internal:
+    <<: *app
+    command: gunicorn -w 1 --threads 8 -b 0.0.0.0:80 internal:app
+    networks:
+      corp:
+        aliases: [metadata.fernwood.internal, provisioning.fernwood.internal]
+
+  crm:
+    # Exists in internal DNS but listens on nothing: the "connection refused" class for A3.
+    <<: *app
+    command: python -c "import time; time.sleep(10**9)"
+    networks:
+      corp:
+        aliases: [crm.fernwood.internal]
+
+  attacker:
+    <<: *app
+    command: gunicorn -w 1 --threads 16 -b 0.0.0.0:9000 attacker:app
+    networks:
+      internet:
+        aliases: [attacker.lab]
+
+  bot:
+    <<: *app
+    command: gunicorn -w 1 --threads 8 -b 0.0.0.0:7000 bot:app
+    networks: [dmz]
+
+  dashboard:
+    <<: *app
+    command: gunicorn -w 1 --threads 8 -b 0.0.0.0:5000 dashboard:app
+    volumes: [scoredata:/data]
+    networks: [dmz]
+    depends_on: [bot]
+
+networks:
+  edge: {}
+  dmz:
+    internal: true
+  internet:
+    internal: true
+    ipam:
+      config: [{subnet: 203.0.113.0/24}]   # documentation range; plays "the internet"
+  corp:
+    internal: true
+    ipam:
+      config: [{subnet: 10.66.0.0/24}]     # Fernwood's private network
+
+volumes:
+  fwdata: {}
+  scoredata: {}
