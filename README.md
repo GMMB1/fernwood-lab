@@ -43,6 +43,18 @@ docker --version
 docker compose version
 ```
 
+### Windows users: use Git Bash for the lab commands
+
+The lab exercises use Linux-style terminal commands (`curl`, `grep`, `sed`, `export`).
+
+- Install **Git for Windows**: https://git-scm.com/download/win
+  It includes **Git Bash**, a terminal where `curl`, `grep`, `sed` and `export` all work
+  exactly as written in the exercises. Use Git Bash for every lab command.
+- `docker compose ...` works in Git Bash, PowerShell and CMD.
+- **PowerShell trap:** in Windows PowerShell, `curl` is NOT real curl (it is a shortcut to
+  `Invoke-WebRequest`), so `curl -si ...` fails. If you must use PowerShell, type
+  **`curl.exe`** instead of `curl`. `grep`, `sed` and `export` do not exist there at all.
+
 ## Install and start
 
 1. Download the lab - either:
