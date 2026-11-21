@@ -1,0 +1,150 @@
+FERNWOOD LAB - WINDOWS SETUP (Windows 10 / 11)
+===============================================
+
+Everything below happens INSIDE WINDOWS.
+If Docker does not work on your laptop: do NOT change your BIOS. Tell your
+trainer - you will use the trainer's lab instead, with only a browser.
+Copy one command at a time. After each command, wait until it finishes.
+Time needed: about 30-45 minutes (mostly downloads). Internet is needed.
+
+
+-----------------------------------------------
+STEP 1 - Open an admin terminal
+-----------------------------------------------
+1. Right-click the Windows Start button (the 4-square icon at the bottom).
+2. Click "Terminal (Admin)"  (on Windows 10: "Windows PowerShell (Admin)").
+3. Windows asks "Do you want to allow this app to make changes?"  ->  click Yes.
+
+
+-----------------------------------------------
+STEP 2 - Turn on WSL 2 (Docker needs it)
+-----------------------------------------------
+Paste this in the admin terminal and press Enter:
+
+wsl --install --no-distribution
+
+When it says it finished:  Start -> Power -> Restart.
+
+
+-----------------------------------------------
+STEP 3 - Install Docker Desktop and Git
+-----------------------------------------------
+After the restart, open "Terminal (Admin)" again (Step 1) and paste these
+two commands, one at a time:
+
+winget install -e --id Docker.DockerDesktop --accept-package-agreements --accept-source-agreements
+
+winget install -e --id Git.Git --accept-package-agreements --accept-source-agreements
+
+Wait until both say "Successfully installed".
+Then:  Start -> Power -> Restart.
+
+(No winget? Download them by hand:
+   Docker Desktop: https://www.docker.com/products/docker-desktop/
+   Git for Windows: https://git-scm.com/download/win
+ Install both with the default options, then restart.)
+
+
+-----------------------------------------------
+STEP 4 - Start Docker Desktop
+-----------------------------------------------
+1. Open "Docker Desktop" from the Start menu.
+2. Accept its terms. You can skip the login / sign-up.
+3. Wait until the bottom-left corner says "Engine running" (green).
+
+Check it works - open the terminal and paste:
+
+docker run --rm hello-world
+
+You should see "Hello from Docker!".
+
+
+-----------------------------------------------
+STEP 5 - Download and start the lab
+-----------------------------------------------
+Open "Git Bash" from the Start menu (it came with Git) and paste these
+three commands, one at a time:
+
+git clone https://github.com/GMMB1/fernwood-lab.git
+
+cd fernwood-lab
+
+docker compose up -d --build
+
+The first start takes a few minutes.
+Check that everything runs (all lines should say "running"):
+
+docker compose ps
+
+
+-----------------------------------------------
+STEP 6 - Open the lab
+-----------------------------------------------
+Open Edge or Chrome and go to:
+
+http://localhost:8088
+
+That is the lab dashboard: stations, hints, victim simulator, flags.
+
+
+-----------------------------------------------
+EVERY DAY AFTER THAT
+-----------------------------------------------
+1. Open Docker Desktop and wait for "Engine running".
+2. Open Git Bash and paste:
+
+cd ~/fernwood-lab
+
+docker compose up -d
+
+3. Open http://localhost:8088
+
+Stop the lab (keeps your accounts and flags):
+
+docker compose down
+
+Reset everything (deletes accounts, bookings and scores):
+
+docker compose down -v
+
+docker compose up -d --build
+
+
+-----------------------------------------------
+IMPORTANT FOR THE LAB EXERCISES
+-----------------------------------------------
+- Use GIT BASH for all lab commands (curl, grep, sed, export).
+- In PowerShell, "curl" is NOT real curl. If you must use PowerShell,
+  type  curl.exe  instead of  curl.
+- In the exercises, LAB-IP / $LAB means "localhost" on your own laptop.
+  In Git Bash, set it once per window:
+
+export LAB=localhost
+
+
+-----------------------------------------------
+IF SOMETHING GOES WRONG
+-----------------------------------------------
+"docker" is not recognized
+    -> Docker Desktop is not installed or not started. Open it and wait
+       for "Engine running", then open a NEW terminal.
+
+Docker Desktop says "virtualization" / "WSL" error, or error 0x80370102
+    -> First try, in Terminal (Admin):
+
+wsl --update
+
+       and restart the computer.
+    -> If the error stays: do NOT change your BIOS settings.
+       Tell your trainer. You will use the trainer's lab instead
+       (you only need a browser for that).
+
+"port is already allocated"
+    -> Another program uses that port. Close it, then run the
+       "docker compose up -d" command again.
+
+A page shows an old version
+    -> Press Ctrl + Shift + R in the browser.
+
+Everything is messy
+    -> Reset (see "Reset everything" above).
